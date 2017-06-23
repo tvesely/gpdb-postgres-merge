@@ -17,7 +17,7 @@
 
 #include "nodes/parsenodes.h"
 
-extern void DefineCollation(List *names, List *parameters);
+extern void DefineCollation(List *names, List *parameters, bool if_not_exists);
 extern void DropCollationsCommand(DropStmt *drop);
 extern void RenameCollation(List *name, const char *newname);
 extern void AlterCollationOwner(List *name, Oid newOwnerId);
