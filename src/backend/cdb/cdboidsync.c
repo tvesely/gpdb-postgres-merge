@@ -47,6 +47,8 @@ get_max_oid_from_segDBs(void)
 		}
 		else
 		{
+			if (PQntuples(cdb_pgresults.pg_results[i]) != 1)
+				elog(LOG, "I am going to trip on an assert because pg_results[i] is: %d", cdb_pgresults.pg_results[i]);
 			Assert(PQntuples(cdb_pgresults.pg_results[i]) == 1);
 			tempoid = atol(PQgetvalue(cdb_pgresults.pg_results[i], 0, 0));
 

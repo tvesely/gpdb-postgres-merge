@@ -901,6 +901,7 @@ ExecProcNode(PlanState *node)
 		node->fHadSentNodeStart = true;
 	}
 
+	elog(DEBUG1, "Executing node type %d", nodeTag(node));
 	switch (nodeTag(node))
 	{
 			/*
@@ -1105,6 +1106,7 @@ ExecProcNode(PlanState *node)
 	 */
 	if (TupIsNull(result))
 	{
+		elog(DEBUG1, "Node tag %d returning NULL", nodeTag(node));
 		ListCell *subp;
 		foreach(subp, node->subPlan)
 		{
