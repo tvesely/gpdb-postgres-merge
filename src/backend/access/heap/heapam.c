@@ -270,6 +270,10 @@ heapgetpage(HeapScanDesc scan, BlockNumber page)
 	 */
 	all_visible = PageIsAllVisible(dp) && !snapshot->takenDuringRecovery;
 
+	elog(DEBUG1, "heapgetpage called buffer: %d snapshot xmin: %d xmax: %d "
+		"haveDistribSnapshot: %d all_visible: %d", buffer, snapshot->xmin,
+	     snapshot->xmax, snapshot->haveDistribSnapshot, all_visible);
+
 	for (lineoff = FirstOffsetNumber, lpp = PageGetItemId(dp, lineoff);
 		 lineoff <= lines;
 		 lineoff++, lpp++)
@@ -300,6 +304,9 @@ heapgetpage(HeapScanDesc scan, BlockNumber page)
 				ItemPointerSet(&(loctup.t_self), page, lineoff);
 
 				valid = HeapTupleSatisfiesVisibility(scan->rs_rd, &loctup, snapshot, buffer);
+
+				elog(DEBUG2, "Checked HeapTupleSatisfiesVisibility valid: %d", valid);
+
 				if (valid)
 				{
 					t_xmax = HeapTupleHeaderGetXmax(loctup.t_data);
