@@ -171,6 +171,7 @@ TupleTableSlot *
 ExecMotion(MotionState * node)
 {
 	Motion	   *motion = (Motion *) node->ps.plan;
+	elog(DEBUG1, "Calling exec motion with mstype: %d lefttree: %d righttree: %d", node->mstype, nodeTag(motion->plan.lefttree), nodeTag(motion->plan.righttree));
 
 	/*
 	 * at the top here we basically decide: -- SENDER vs. RECEIVER and --
@@ -206,7 +207,10 @@ ExecMotion(MotionState * node)
                 tuple = execMotionSortedReceiver(node);
         }
 		else
+		{
 			tuple = execMotionUnsortedReceiver(node);
+			elog(DEBUG1, "Returning from unsorted execMotionUnsortedReceiver. tuple = %x", tuple);
+		}
 
 		/*
 		 * We tell the upper node as if this was the end of tuple stream
@@ -273,6 +277,8 @@ execMotionSender(MotionState * node)
 			(motion->motionType == MOTIONTYPE_EXPLICIT && motion->segidColIdx > 0) || 
 			(motion->motionType == MOTIONTYPE_FIXED && motion->numOutputSegs <= 1));
 	Assert(node->ps.state->interconnect_context);
+
+	elog(DEBUG1, "Calling execMotionSender done: %d", done);
 
 	while (!done)
 	{
