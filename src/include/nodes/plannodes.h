@@ -851,13 +851,10 @@ typedef struct Join
 typedef struct NestLoop
 {
 	Join		join;
-<<<<<<< HEAD
+	List	   *nestParams;		/* list of NestLoopParam nodes */
 
 	bool		shared_outer;
 	bool		singleton_outer; /*CDB-OLAP true => outer is plain Agg */
-=======
-	List	   *nestParams;		/* list of NestLoopParam nodes */
->>>>>>> a4bebdd92624e018108c2610fc3f2c1584b6c687
 } NestLoop;
 
 typedef struct NestLoopParam
