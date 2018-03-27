@@ -2526,7 +2526,7 @@ CTranslatorDXLToPlStmt::PsortFromDXLSort
 	psort->collations = (Oid *) gpdb::GPDBAlloc(ulNumCols * sizeof(Oid));
 	psort->nullsFirst = (bool *) gpdb::GPDBAlloc(ulNumCols * sizeof(bool));
 
-	TranslateSortCols(pdxlnSortColList, &dxltrctxChild, psort->sortColIdx, psort->sortOperators, psort->nullsFirst);
+	TranslateSortCols(pdxlnSortColList, &dxltrctxChild, psort->sortColIdx, psort->sortOperators, psort->collations, psort->nullsFirst);
 
 	SetParamIds(pplan);
 
@@ -4758,6 +4758,7 @@ CTranslatorDXLToPlStmt::TranslateSortCols
 	const CDXLTranslateContext *pdxltrctxChild,
 	AttrNumber *pattnoSortColIds,
 	Oid *poidSortOpIds,
+	Oid *poidSortCollationOpIds,
 	bool *pboolNullsFirst
 	)
 {
@@ -4776,6 +4777,7 @@ CTranslatorDXLToPlStmt::TranslateSortCols
 
 		pattnoSortColIds[ul] = pteSortCol->resno;
 		poidSortOpIds[ul] = CMDIdGPDB::PmdidConvert(pdxlopSortCol->PmdidSortOp())->OidObjectId();
+		poidSortCollationOpIds[ul] = CMDIdGPDB::PmdidConvert(pdxlopSortCol->PmdidSortCollationOp())->OidObjectId();
 		pboolNullsFirst[ul] = pdxlopSortCol->FSortNullsFirst();
 	}
 }

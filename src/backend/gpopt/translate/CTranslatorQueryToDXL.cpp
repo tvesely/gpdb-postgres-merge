@@ -534,7 +534,7 @@ CTranslatorQueryToDXL::PdxlnFromQueryInternal()
 	}
 
 	// translate limit clause
-	CDXLNode *pdxlnLimit = PdxlnLgLimit(m_pquery->sortClause, m_pquery->limitCount, m_pquery->limitOffset, pdxlnChild, phmiulSortGroupColsColId);
+	CDXLNode *pdxlnLimit = PdxlnLgLimit(m_pquery->sortClause, m_pquery->targetList, m_pquery->limitCount, m_pquery->limitOffset, pdxlnChild, phmiulSortGroupColsColId);
 
 
 	if (NULL == m_pquery->targetList)
@@ -1763,6 +1763,7 @@ DrgPdxln *
 CTranslatorQueryToDXL::PdrgpdxlnSortCol
 	(
 	List *plSortCl,
+	List *plTargetList,
 	HMIUl *phmiulColColId
 	)
 	const
@@ -1788,6 +1789,12 @@ CTranslatorQueryToDXL::PdrgpdxlnSortCol
 		CMDIdGPDB *pmdidScOp = GPOS_NEW(m_pmp) CMDIdGPDB(oid);
 		const IMDScalarOp *pmdscop = m_pmda->Pmdscop(pmdidScOp);
 
+		ListCell *plcTargetList;
+		ForEach (plcTargetList, plTargetList)
+		{
+
+		}
+
 		const CWStringConst *pstr = pmdscop->Mdname().Pstr();
 		GPOS_ASSERT(NULL != pstr);
 
@@ -1797,6 +1804,8 @@ CTranslatorQueryToDXL::PdrgpdxlnSortCol
 												ulColId,
 												pmdidScOp,
 												GPOS_NEW(m_pmp) CWStringConst(pstr->Wsz()),
+												NULL,
+												NULL,
 												psortcl->nulls_first
 												);
 
@@ -1822,6 +1831,7 @@ CDXLNode *
 CTranslatorQueryToDXL::PdxlnLgLimit
 	(
 	List *plSortCl,
+	List *plTargetList,
 	Node *pnodeLimitCount,
 	Node *pnodeLimitOffset,
 	CDXLNode *pdxlnChild,
@@ -1842,7 +1852,7 @@ CTranslatorQueryToDXL::PdxlnLgLimit
 	// create a sorting col list
 	CDXLNode *pdxlnSortColList = GPOS_NEW(m_pmp) CDXLNode(m_pmp, GPOS_NEW(m_pmp) CDXLScalarSortColList(m_pmp));
 
-	DrgPdxln *pdrgpdxlnSortCol = PdrgpdxlnSortCol(plSortCl, phmiulGrpColsColId);
+	DrgPdxln *pdrgpdxlnSortCol = PdrgpdxlnSortCol(plSortCl, plTargetList, phmiulGrpColsColId);
 	const ULONG ulSize = pdrgpdxlnSortCol->UlLength();
 	for (ULONG ul = 0; ul < ulSize; ul++)
 	{

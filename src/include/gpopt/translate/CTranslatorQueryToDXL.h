@@ -294,7 +294,7 @@ namespace gpdxl
 			void AddSortingGroupingColumn(TargetEntry *pte, HMIUl *phmiulSortGrpColsColId, ULONG ulColId) const;
 
 			// translate the list of sorting columns
-			DrgPdxln *PdrgpdxlnSortCol(List *plSortCl, HMIUl *phmiulColColId) const;
+			DrgPdxln *PdrgpdxlnSortCol(List *plSortCl, List *plTargetList, HMIUl *phmiulColColId) const;
 
 			// translate the list of partition-by column identifiers
 			DrgPul *PdrgpulPartCol(List *plSortCl, HMIUl *phmiulColColId) const;
