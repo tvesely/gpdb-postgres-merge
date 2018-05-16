@@ -1,6 +1,33 @@
 -- Setup fault injectors
 CREATE extension if NOT EXISTS gp_inject_fault;
 
+
+--
+-- Try and fail to import all system collations
+--
+-- Simulate a locale missing on one segment at collation creation. If this
+-- happens, we expect that 2PC will prevent this collation from being created.
+--
+SELECT gp_inject_fault('collate_locale_os_lookup', 'error', dbid)
+ from gp_segment_configuration where content = 0 and role = 'p';
+
+-- The fault injector should prevent all collations from being created by
+-- pg_import_system_collations(). 
+create schema import_collation_schema;
+select pg_import_system_collations( (select oid from pg_namespace where nspname = 'import_collation_schema') );
+
+-- Count the number of collations in import_collation_schema. It should be
+-- zero because one of the segments failed to create a collation.
+select count(*) from pg_collation where collnamespace = (select oid from pg_namespace where nspname = 'import_collation_schema');
+
+SELECT gp_inject_fault('collate_locale_os_lookup', 'reset', dbid)
+ from gp_segment_configuration where content = 0 and role = 'p';
+
+--
+-- Import all system collations.
+-- 
+select pg_import_system_collations( (select oid from pg_namespace where nspname = 'import_collation_schema') ) > 0 as collations_imported;
+
 --
 -- Create a collation from an on-disk locale
 --
