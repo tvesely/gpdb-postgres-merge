@@ -531,6 +531,42 @@ cmpaliases(const void *a, const void *b)
 }
 #endif							/* READ_LOCALE_A_OUTPUT */
 
+static void
+DispatchCollationCreate(char *alias, char *locale, Oid nspid)
+{
+	Assert(Gp_role == GP_ROLE_DISPATCH);
+
+	List *names = NIL;
+	Value *schemaname = makeString(get_namespace_name(nspid));
+	Value *relname = makeString(alias);
+
+	names = lappend(names, schemaname);
+	names = lappend(names, relname);
+
+	List *parameters = NIL;
+	DefElem *parameter = makeNode(DefElem);
+
+	parameter->defname = "locale";
+	parameter->defaction = DEFELEM_UNSPEC;
+	parameter->arg = (Node*) makeString(locale);
+
+	parameters = lappend(parameters, parameter);
+
+
+	DefineStmt * stmt = makeNode(DefineStmt);
+	stmt->kind = OBJECT_COLLATION;
+	stmt->oldstyle = false;
+	stmt->defnames = names;
+	stmt->args = NIL;
+	stmt->definition = parameters;
+	stmt->trusted = false;
+	CdbDispatchUtilityStatement((Node *) stmt,
+	                            DF_CANCEL_ON_ERROR|
+		                        DF_WITH_SNAPSHOT|
+		                        DF_NEED_TWO_PHASE,
+	                            GetAssignedOidsForDispatch(),
+	                            NULL);
+}
 
 /*
  * pg_import_system_collations: add known system collations to pg_collation
@@ -645,37 +681,7 @@ pg_import_system_collations(PG_FUNCTION_ARGS)
 
 			if (OidIsValid(collid))
 			{
-				List *names = NIL;
-				Value *schemaname = makeString(get_namespace_name(nspid));
-				Value *relname = makeString(localebuf);
-
-				names = lappend(names, schemaname);
-				names = lappend(names, relname);
-
-				List *parameters = NIL;
-				DefElem *parameter = makeNode(DefElem);
-
-				parameter->defname = "locale";
-				parameter->defaction = DEFELEM_UNSPEC;
-				parameter->arg = (Node*) makeString(localebuf);
-
-				parameters = lappend(parameters, parameter);
-
-				Assert(Gp_role == GP_ROLE_DISPATCH);
-
-				DefineStmt * stmt = makeNode(DefineStmt);
-				stmt->kind = OBJECT_COLLATION;
-				stmt->oldstyle = false;
-				stmt->defnames = names;
-				stmt->args = NIL;
-				stmt->definition = parameters;
-				stmt->trusted = false;
-				CdbDispatchUtilityStatement((Node *) stmt,
-				                            DF_CANCEL_ON_ERROR|
-					                            DF_WITH_SNAPSHOT|
-					                            DF_NEED_TWO_PHASE,
-				                            GetAssignedOidsForDispatch(),
-				                            NULL);
+				DispatchCollationCreate(localebuf, localebuf, nspid);
 
 				ncreated++;
 
@@ -739,37 +745,7 @@ pg_import_system_collations(PG_FUNCTION_ARGS)
 
 			if (OidIsValid(collid))
 			{
-				List *names = NIL;
-				Value *schemaname = makeString(get_namespace_name(nspid));
-				Value *relname = makeString(alias);
-
-				names = lappend(names, schemaname);
-				names = lappend(names, relname);
-
-				List *parameters = NIL;
-				DefElem *parameter = makeNode(DefElem);
-
-				parameter->defname = "locale";
-				parameter->defaction = DEFELEM_UNSPEC;
-				parameter->arg = (Node*) makeString(locale);
-
-				parameters = lappend(parameters, parameter);
-
-				Assert(Gp_role == GP_ROLE_DISPATCH);
-
-				DefineStmt * stmt = makeNode(DefineStmt);
-				stmt->kind = OBJECT_COLLATION;
-				stmt->oldstyle = false;
-				stmt->defnames = names;
-				stmt->args = NIL;
-				stmt->definition = parameters;
-				stmt->trusted = false;
-				CdbDispatchUtilityStatement((Node *) stmt,
-											DF_CANCEL_ON_ERROR|
-											DF_WITH_SNAPSHOT|
-											DF_NEED_TWO_PHASE,
-											GetAssignedOidsForDispatch(),
-											NULL);
+				DispatchCollationCreate(alias, locale, nspid);
 
 				ncreated++;
 
