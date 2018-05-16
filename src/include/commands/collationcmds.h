@@ -24,5 +24,6 @@ extern void AlterCollationOwner(List *name, Oid newOwnerId);
 extern void AlterCollationOwner_oid(Oid collationOid, Oid newOwnerId);
 extern void AlterCollationNamespace(List *name, const char *newschema);
 extern Oid	AlterCollationNamespace_oid(Oid collOid, Oid newNspOid);
+extern Datum pg_import_system_collations(PG_FUNCTION_ARGS);
 
 #endif   /* COLLATIONCMDS_H */
