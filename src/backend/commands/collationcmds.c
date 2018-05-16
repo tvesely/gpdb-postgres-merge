@@ -549,6 +549,10 @@ pg_import_system_collations(PG_FUNCTION_ARGS)
 				(errcode(ERRCODE_INSUFFICIENT_PRIVILEGE),
 				 (errmsg("must be superuser to import system collations"))));
 
+	if (Gp_role != GP_ROLE_DISPATCH)
+		ereport(ERROR,
+					(errmsg("must be dispatcher to import system collations")));
+
 	/* Load collations known to libc, using "locale -a" to enumerate them */
 #ifdef READ_LOCALE_A_OUTPUT
 	{
@@ -703,6 +707,38 @@ pg_import_system_collations(PG_FUNCTION_ARGS)
 
 			if (OidIsValid(collid))
 			{
+				List *names = NIL;
+				Value *schemaname = makeString(get_namespace_name(nspid));
+				Value *relname = makeString(alias);
+
+				names = lappend(names, schemaname);
+				names = lappend(names, relname);
+
+				List *parameters = NIL;
+				DefElem *parameter = makeNode(DefElem);
+
+				parameter->defname = "locale";
+				parameter->defaction = DEFELEM_UNSPEC;
+				parameter->arg = (Node*) makeString(locale);
+
+				parameters = lappend(parameters, parameter);
+
+				Assert(Gp_role == GP_ROLE_DISPATCH);
+
+				DefineStmt * stmt = makeNode(DefineStmt);
+				stmt->kind = OBJECT_COLLATION;
+				stmt->oldstyle = false;
+				stmt->defnames = names;
+				stmt->args = NIL;
+				stmt->definition = parameters;
+				stmt->trusted = false;
+				CdbDispatchUtilityStatement((Node *) stmt,
+											DF_CANCEL_ON_ERROR|
+											DF_WITH_SNAPSHOT|
+											DF_NEED_TWO_PHASE,
+											GetAssignedOidsForDispatch(),
+											NULL);
+
 				ncreated++;
 
 				CommandCounterIncrement();
