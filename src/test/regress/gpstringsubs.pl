@@ -244,6 +244,11 @@ if (1)
         
     }
 
+	my $syslocale = `locale -a  | egrep -v "C|POSIX" | head -1`;
+	my $syslocaleexp = '\\@syslocale\\@';
+
+	chomp $syslocale;
+
     my $username = getpwuid($>);
 
     my $hostexp = '\\@hostname\\@';
@@ -255,7 +260,7 @@ if (1)
 	chomp $curdir;
 
 #    print "$filnam\n";
-    system "perl -i -ple \' s/$hostexp/$hostname/gm; s/$unexp/$username/gm; s/$gpglobconn/$glob_connect/gm; \' $filnam\n";
+    system "perl -i -ple \' s/$hostexp/$hostname/gm; s/$unexp/$username/gm; s/$gpglobconn/$glob_connect/gm; s/$syslocaleexp/$syslocale/gm; \' $filnam\n";
 
     # replace all "which" expressions with binary
     if (defined($gpwhich_all) && length($gpwhich_all))
