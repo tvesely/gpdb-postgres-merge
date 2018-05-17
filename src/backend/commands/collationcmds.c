@@ -62,8 +62,10 @@ DefineCollation(List *names, List *parameters, bool if_not_exists)
 	DefElem    *localeEl = NULL;
 	DefElem    *lccollateEl = NULL;
 	DefElem    *lcctypeEl = NULL;
+	DefElem    *encodingEl = NULL;
 	char	   *collcollate = NULL;
 	char	   *collctype = NULL;
+	int         collencoding = 0;
 	Oid			newoid;
 
 	collNamespace = QualifiedNameGetCreationNamespace(names, &collName);
@@ -86,6 +88,8 @@ DefineCollation(List *names, List *parameters, bool if_not_exists)
 			defelp = &lccollateEl;
 		else if (pg_strcasecmp(defel->defname, "lc_ctype") == 0)
 			defelp = &lcctypeEl;
+		else if (pg_strcasecmp(defel->defname, "encoding") == 0)
+			defelp = &encodingEl;
 		else
 		{
 			ereport(ERROR,
@@ -132,6 +136,9 @@ DefineCollation(List *names, List *parameters, bool if_not_exists)
 	if (lcctypeEl)
 		collctype = defGetString(lcctypeEl);
 
+	if (encodingEl)
+		collencoding = defGetInt32(encodingEl);
+
 	if (!collcollate)
 		ereport(ERROR,
 				(errcode(ERRCODE_INVALID_OBJECT_DEFINITION),
@@ -142,12 +149,10 @@ DefineCollation(List *names, List *parameters, bool if_not_exists)
 				(errcode(ERRCODE_INVALID_OBJECT_DEFINITION),
 				 errmsg("parameter \"lc_ctype\" must be specified")));
 
-	check_encoding_locale_matches(GetDatabaseEncoding(), collcollate, collctype);
-
 	newoid = CollationCreate(collName,
 							 collNamespace,
 							 GetUserId(),
-							 GetDatabaseEncoding(),
+							 collencoding ? collencoding : GetDatabaseEncoding(),
 							 collcollate,
 							 collctype,
 							 if_not_exists,
@@ -532,7 +537,7 @@ cmpaliases(const void *a, const void *b)
 #endif							/* READ_LOCALE_A_OUTPUT */
 
 static void
-DispatchCollationCreate(char *alias, char *locale, Oid nspid)
+DispatchCollationCreate(char *alias, char *locale, Oid nspid, int encoding)
 {
 	Assert(Gp_role == GP_ROLE_DISPATCH);
 
@@ -544,14 +549,21 @@ DispatchCollationCreate(char *alias, char *locale, Oid nspid)
 	names = lappend(names, relname);
 
 	List *parameters = NIL;
-	DefElem *parameter = makeNode(DefElem);
+	DefElem *defstring = makeNode(DefElem);
 
-	parameter->defname = "locale";
-	parameter->defaction = DEFELEM_UNSPEC;
-	parameter->arg = (Node*) makeString(locale);
+	defstring->defname = "locale";
+	defstring->defaction = DEFELEM_UNSPEC;
+	defstring->arg = (Node*) makeString(locale);
 
-	parameters = lappend(parameters, parameter);
+	parameters = lappend(parameters, defstring);
 
+	DefElem *defencoding = makeNode(DefElem);
+
+	defencoding->defname = "encoding";
+	defencoding->defaction = DEFELEM_UNSPEC;
+	defencoding->arg = (Node*) makeInteger(encoding);
+
+	parameters = lappend(parameters, defencoding);
 
 	DefineStmt * stmt = makeNode(DefineStmt);
 	stmt->kind = OBJECT_COLLATION;
@@ -681,7 +693,7 @@ pg_import_system_collations(PG_FUNCTION_ARGS)
 
 			if (OidIsValid(collid))
 			{
-				DispatchCollationCreate(localebuf, localebuf, nspid);
+				DispatchCollationCreate(localebuf, localebuf, nspid, enc);
 
 				ncreated++;
 
@@ -745,7 +757,7 @@ pg_import_system_collations(PG_FUNCTION_ARGS)
 
 			if (OidIsValid(collid))
 			{
-				DispatchCollationCreate(alias, locale, nspid);
+				DispatchCollationCreate(alias, locale, nspid, enc);
 
 				ncreated++;
 
